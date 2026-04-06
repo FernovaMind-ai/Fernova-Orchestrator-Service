@@ -20,7 +20,8 @@ class SearchService:
         self,
         query: str,
         top_k: int = 10,
-        method: str = "ensemble"
+        method: str = "ensemble",
+        headers: dict = None
     ) -> Dict[str, Any]:
         """
         Perform semantic search on indexed documents
@@ -29,6 +30,7 @@ class SearchService:
             query: Search query
             top_k: Number of top results to return
             method: Embedding method (ensemble, base, etc.)
+            headers: Optional headers to propagate (e.g., X-User-ID)
         
         Returns:
             Dictionary with search results
@@ -47,6 +49,7 @@ class SearchService:
                         "top": top_k,
                         "method": method,
                     },
+                    headers=headers or {}
                 )
             
             if response.status_code >= 400:
@@ -74,7 +77,8 @@ class SearchService:
         title: str,
         description: str,
         category: str = "general",
-        metadata: Dict[str, Any] = None
+        metadata: Dict[str, Any] = None,
+        headers: dict = None
     ) -> Dict[str, Any]:
         """
         Store a single document
@@ -86,6 +90,7 @@ class SearchService:
             description: Document description
             category: Document category
             metadata: Optional metadata
+            headers: Optional headers to propagate (e.g., X-User-ID)
         
         Returns:
             Response from search service
@@ -109,6 +114,7 @@ class SearchService:
                 response = await client.post(
                     f"{self.base_url}/integrate/store",
                     json=payload,
+                    headers=headers or {}
                 )
             
             if response.status_code >= 400:
@@ -125,7 +131,8 @@ class SearchService:
     async def batch_store_documents(
         self,
         documents: List[Dict[str, Any]],
-        method: str = "ensemble"
+        method: str = "ensemble",
+        headers: dict = None
     ) -> Dict[str, Any]:
         """
         Store multiple documents
@@ -133,6 +140,7 @@ class SearchService:
         Args:
             documents: List of document dictionaries
             method: Embedding method
+            headers: Optional headers to propagate (e.g., X-User-ID)
         
         Returns:
             Response from search service
@@ -149,6 +157,7 @@ class SearchService:
                         "documents": documents,
                         "method": method,
                     },
+                    headers=headers or {}
                 )
             
             if response.status_code >= 400:
@@ -161,3 +170,73 @@ class SearchService:
             
         except httpx.RequestError as exc:
             raise ServiceUnavailableError("Search", str(exc))
+    
+    async def add_synonyms(self, term: str, synonyms: List[str], headers: dict = None) -> Dict[str, Any]:
+        """
+        Add synonym mappings to the search service
+        
+        Args:
+            term: The term to add synonyms for
+            synonyms: List of synonym terms
+            headers: Optional headers to propagate (e.g., X-User-ID)
+        
+        Returns:
+            Response from search service
+        
+        Raises:
+            SearchServiceError: If service returns error
+            ServiceUnavailableError: If service is unreachable
+        """
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout)) as client:
+                response = await client.post(
+                    f"{self.base_url}/integrate/synonyms/add",
+                    json={
+                        "term": term,
+                        "synonyms": synonyms,
+                    },
+                    headers=headers or {}
+                )
+            
+            if response.status_code >= 400:
+                raise SearchServiceError(
+                    response.status_code,
+                    response.text
+                )
+            
+            return response.json()
+            
+        except httpx.RequestError as exc:
+            raise ServiceUnavailableError("Search/Synonyms", str(exc))
+    
+    async def list_synonyms(self, headers: dict = None) -> Dict[str, Any]:
+        """
+        List all configured synonyms
+        
+        Args:
+            headers: Optional headers to propagate (e.g., X-User-ID)
+        
+        Returns:
+            Dictionary with all synonyms
+        
+        Raises:
+            SearchServiceError: If service returns error
+            ServiceUnavailableError: If service is unreachable
+        """
+        try:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout)) as client:
+                response = await client.get(
+                    f"{self.base_url}/integrate/synonyms/list",
+                    headers=headers or {}
+                )
+            
+            if response.status_code >= 400:
+                raise SearchServiceError(
+                    response.status_code,
+                    response.text
+                )
+            
+            return response.json()
+            
+        except httpx.RequestError as exc:
+            raise ServiceUnavailableError("Search/Synonyms", str(exc))

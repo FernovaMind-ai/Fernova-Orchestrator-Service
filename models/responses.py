@@ -27,6 +27,7 @@ class OrchestratorResult(BaseModel):
     embedding_response: Dict[str, Any] = Field(..., description="Embedding service response")
     search_response: Dict[str, Any] = Field(..., description="Search service response")
     created_at: str = Field(..., description="Creation timestamp (ISO format)")
+    gap_fixes: Dict[str, str] = Field(default_factory=dict, description="Summary of all gap fixes applied")
 
 
 class HealthResponse(BaseModel):
@@ -49,3 +50,25 @@ class ErrorResponse(BaseModel):
     status: str = Field(default="error", description="Error status")
     detail: str = Field(..., description="Error detail message")
     error_code: int = Field(..., description="HTTP error code")
+
+
+class EmbedTextResponse(BaseModel):
+    """Response model for single text embedding"""
+    
+    status: str = Field(..., description="Operation status")
+    text: str = Field(..., description="Original text")
+    embedding: List[float] = Field(..., description="Embedding vector")
+    dimensions: int = Field(..., description="Embedding dimensions (1536 for BAAI/bge)")
+    method: str = Field(..., description="Embedding method used")
+    timestamp: str = Field(..., description="Timestamp (ISO format)")
+
+
+class EmbedBatchResponse(BaseModel):
+    """Response model for batch text embedding"""
+    
+    status: str = Field(..., description="Operation status")
+    embeddings: List[Dict[str, Any]] = Field(..., description="List of embeddings with text")
+    count: int = Field(..., description="Number of embeddings generated")
+    method: str = Field(..., description="Embedding method used")
+    timestamp: str = Field(..., description="Timestamp (ISO format)")
+
