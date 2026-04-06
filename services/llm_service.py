@@ -26,6 +26,7 @@ class LLMService:
         temperature: float = 0.7,
         max_tokens: Optional[int] = None,
         response_type: str = "summary",
+        headers: dict = None,
     ) -> Dict[str, Any]:
         """
         Query LLM with context
@@ -39,6 +40,7 @@ class LLMService:
             temperature: Temperature for generation
             max_tokens: Maximum tokens in response
             response_type: Type of response (general, analysis, summary, qna, next_query, creative)
+            headers: Optional headers to propagate (e.g., X-User-ID)
         
         Returns:
             Dictionary with LLM response
@@ -64,11 +66,15 @@ class LLMService:
         }
         
         try:
+            # Prepare headers with auth and content-type
+            request_headers = headers or {}
+            request_headers["Content-Type"] = "application/json"
+            
             async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout)) as client:
                 response = await client.post(
                     f"{self.base_url}/api/v1/query",
                     json=payload,
-                    headers={"Content-Type": "application/json"}
+                    headers=request_headers
                 )
             
             # Log response status
