@@ -27,6 +27,10 @@ async def auth_middleware(request: Request, call_next):
     if request.url.path in ["/", "/health", "/docs", "/redoc", "/openapi.json"]:
         return await call_next(request)
     
+    # Skip authentication for CORS preflight OPTIONS requests
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    
     # Validate X-User-ID header for all other endpoints
     user_id = request.headers.get("X-User-ID")
     if not user_id:
